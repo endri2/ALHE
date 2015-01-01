@@ -96,6 +96,8 @@ evaluateList<-function(points,evaluation)
   return (points) 
 }
 
+last <- function(x) { return( x[length(x)] ) }
+
 nodes <- list('A', 'B', 'C', 'D');
 edges <- list( #access: edges[[i]]$field
     list(begin = nodes[[1]], end = nodes[[2]], length = 100, soil = 0),
@@ -130,6 +132,9 @@ p_IWD = 0.9
 initSoil = 10000
 initVel = 200
 
+############################
+#INITIZALIZATION PART
+############################
 
 #initialize soils
 for (i in 1:length(edges)) {
@@ -138,14 +143,38 @@ for (i in 1:length(edges)) {
 
 #initialize IWDs
 for (i in 1:length(nodes)) {
+    #set initVel, set soil to 0, set IWD's starting points ("spread out nodes")
     IWDs[[length(IWDs) + 1]] <- list(id = i, v = initVel, soil = 0, nodes = list(sample(nodes, 1)[[1]]))
 }
 
 #test append to nodes list
-for (i in 1:length(nodes)) {
-    IWDs[[i]]$nodes[[length(IWDs[[i]]$nodes) + 1]] <- sample(nodes, 1)[[1]]
+#for (i in 1:length(nodes)) {
+#    IWDs[[i]]$nodes[[length(IWDs[[i]]$nodes) + 1]] <- sample(nodes, 1)[[1]]
+#}
+
+
+############################
+#EXAMPLE FIRST ITERATION
+############################
+for (i in 1:length(IWDs)) {
+    #find nodes that were not visited by IWD yet
+    lastNode <- IWDs[[i]]$nodes[[length(IWDs[[i]]$nodes)]]
+    possibleEdges <- list()
+    cat(c(i, ": possibleEdges\n"))
+    for(j in 1:length(edges)) {
+        #this edges starts from our last node
+        if(edges[[j]]$begin == lastNode) {
+            #only requirement is not to have the same node
+            #twice or more times in generated path for
+            #travelling salesman problem, which is also 
+            #default requirement for the IWD
+            possibleEdges[[length(possibleEdges) + 1]] <- edges[[j]]
+        }
+    }
+    for(k in 1:length(possibleEdges)) {
+        cat(c(possibleEdges[[k]]$begin, "->", possibleEdges[[k]]$end, "\n"))
+        #print(j + ": " + possibleEdges[[j]]$begin + "->" + possibleEdges[[j]]$end)
+    }
+    
 }
-
-
-####  THAT'S ALL FOLKS
 
