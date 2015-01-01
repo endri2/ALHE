@@ -103,15 +103,9 @@ edges <- list( #access: edges[[i]]$field
     list(begin = nodes[[1]], end = nodes[[2]], length = 100, soil = 0),
     list(begin = nodes[[1]], end = nodes[[3]], length = 120, soil = 0),
     list(begin = nodes[[1]], end = nodes[[4]], length = 90, soil = 0),
-    list(begin = nodes[[2]], end = nodes[[1]], length = 100, soil = 0),
     list(begin = nodes[[2]], end = nodes[[3]], length = 60, soil = 0),
     list(begin = nodes[[2]], end = nodes[[4]], length = 130, soil = 0),
-    list(begin = nodes[[3]], end = nodes[[1]], length = 120, soil = 0),
-    list(begin = nodes[[3]], end = nodes[[2]], length = 60, soil = 0),
-    list(begin = nodes[[3]], end = nodes[[4]], length = 70, soil = 0),
-    list(begin = nodes[[4]], end = nodes[[1]], length = 90, soil = 0),
-    list(begin = nodes[[4]], end = nodes[[2]], length = 130, soil = 0),
-    list(begin = nodes[[4]], end = nodes[[3]], length = 70, soil = 0)
+    list(begin = nodes[[3]], end = nodes[[4]], length = 70, soil = 0)
     );
 
 IWDs <- list()
@@ -156,10 +150,23 @@ for (i in 1:length(nodes)) {
 ############################
 #EXAMPLE FIRST ITERATION
 ############################
+#checks if specified node exists in specified path
+existsInPath <- function(node, path)
+{
+    for(i in 1:length(path)) {
+        if(path[[i]] == node) {
+            return (TRUE)
+        }
+    }
+    
+    return (FALSE)
+}
+
 for (i in 1:length(IWDs)) {
     #find nodes that were not visited by IWD yet
     lastNode <- IWDs[[i]]$nodes[[length(IWDs[[i]]$nodes)]]
     possibleEdges <- list()
+    possibleNodes <- list()
     cat(c(i, ": possibleEdges\n"))
     for(j in 1:length(edges)) {
         #this edges starts from our last node
@@ -168,11 +175,22 @@ for (i in 1:length(IWDs)) {
             #twice or more times in generated path for
             #travelling salesman problem, which is also 
             #default requirement for the IWD
-            possibleEdges[[length(possibleEdges) + 1]] <- edges[[j]]
+
+            if(existsInPath(edges[[j]]$end, IWDs[[i]]$nodes) == FALSE) {
+                possibleEdges[[length(possibleEdges) + 1]] <- edges[[j]]
+                possibleNodes[[length(possibleNodes) + 1]] <- edges[[j]]$end
+            }
+            
+        }else if(edges[[j]]$end == lastNode) {
+            if(existsInPath(edges[[j]]$begin, IWDs[[i]]$nodes) == FALSE) {
+                possibleEdges[[length(possibleEdges) + 1]] <- edges[[j]]
+                possibleNodes[[length(possibleNodes) + 1]] <- edges[[j]]$begin
+            }
         }
     }
+    #print available edges
     for(k in 1:length(possibleEdges)) {
-        cat(c(possibleEdges[[k]]$begin, "->", possibleEdges[[k]]$end, "\n"))
+        cat(c(lastNode, "->", possibleNodes[[k]], "\n"))
         #print(j + ": " + possibleEdges[[j]]$begin + "->" + possibleEdges[[j]]$end)
     }
     
