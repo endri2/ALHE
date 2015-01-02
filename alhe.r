@@ -115,7 +115,7 @@ iterCount = 0
 
 a_v = 1
 b_v = 0.01
-c_1 = 1
+c_v = 1
 
 a_s = 1
 b_s = 0.01
@@ -239,11 +239,14 @@ for (i in 1:length(IWDs)) {
     }
     
     #print visited node list after adding new one
-    cat("Visited nodes : [")
+    cat("Visited nodes: [")
     for(k in 1:length(IWDs[[i]]$nodes)) {
         cat(IWDs[[i]]$nodes[[k]], ", ")
     }
     cat("\b\b\b]\n")
     
+    #update velocity
+    IWDs[[i]]$v = IWDs[[i]]$v + ((a_v)/(b_v + c_v * possibleEdges[[selIndex]]$soil^2))
+    cat(c("Updated velocity: ", IWDs[[i]]$v, "\n"))
 }
 
