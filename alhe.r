@@ -138,7 +138,12 @@ for (i in 1:length(edges)) {
 #initialize IWDs
 for (i in 1:length(nodes)) {
     #set initVel, set soil to 0, set IWD's starting points ("spread out nodes")
-    IWDs[[length(IWDs) + 1]] <- list(id = i, v = initVel, soil = 0, nodes = list(sample(nodes, 1)[[1]]))
+    IWDs[[length(IWDs) + 1]] <- list(
+        id = i, 
+        v = initVel, 
+        soil = 0, 
+        nodes = list(sample(nodes, 1)[[1]]),
+        edges = list())
 }
 
 #test append to nodes list
@@ -243,6 +248,7 @@ for (i in 1:length(IWDs)) {
     } else {
         IWDs[[i]]$nodes[[length(IWDs[[i]]$nodes) + 1]] <- possibleEdges[[selIndex]]$begin
     }
+    IWDs[[i]]$edges[[length(IWDs[[i]]$edges) + 1]] <- possibleEdges[[selIndex]]
     
     #print visited node list after adding new one
     cat("Visited nodes: [")
@@ -275,12 +281,54 @@ for (i in 1:length(edges)) {
     edges[[i]]$auxSoil <- 0
 }
 
-#sortowanie
+#solution quality calculation
+isEdgeInList <- function(edge, edgeList) {
+    cat(c("testing for edge: ", edge$begin, "->", edge$end, "\n"))
+    for(i in 1:length(edgeList)) { 
+        listEdge <- edgeList[[i]]
+        cat(c("testing with edge: ", listEdge$begin, "->", listEdge$end, "\n"))
+        if(listEdge$begin == edge$begin && listEdge$end == edge$end) {
+            return (TRUE)
+        }
+    }
+    
+    return (FALSE)
+}
+#sort
 lengths <- sapply(edges,"[[","length")
 sorted <- edges[order(lengths)]
-#print(sorted[[1]]$end)
+#print sorted edges
+print("Sorted all edges by length:")
 for(i in 1:length(sorted)) {
     cat(c(sorted[[i]]$begin, "->", sorted[[i]]$end, " length = ", sorted[[i]]$length, "\n"))
 }
+
+quality <- 0
+for(i in 1:(length(nodes) - length(IWDs[[1]]$edges))) {
+    #for(j in 1:length(IWDs[[1]]$edges))
+}
+
+gatheredShortestEdges <- 0
+neededShortestEdges <- (length(nodes) - length(IWDs[[1]]$edges))
+iterNum <- 1
+
+cat(c("neededShortestEdges", neededShortestEdges, "\n"))
+
+while(gatheredShortestEdges < neededShortestEdges ) {
+    shortestEdge <- sorted[[iterNum]]
+    iterNum <- iterNum + 1
+    
+    
+    if(isEdgeInList(shortestEdge, IWDs[[1]]$edges) == TRUE) {
+        next;
+    }
+    
+    quality <- quality + shortestEdge$length
+    gatheredShortestEdges <- gatheredShortestEdges + 1
+}
+for(i in 1:length(IWDs[[1]]$edges)) {
+    quality <- quality + IWDs[[1]]$edges[[i]]$length
+}
+cat(c("solution quality: ", quality, "\n"))
 
 
