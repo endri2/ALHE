@@ -151,6 +151,20 @@ for (i in 1:length(nodes)) {
 #EXAMPLE FIRST ITERATION
 ############################
 #checks if specified node exists in specified path
+f <- function(edge, possibleEdges) {
+    epsilon <- 0.001
+    return (1/(epsilon + g(edge, possibleEdges)))
+}
+
+g <- function(edge, possibleEdges) {
+    minVal <- Inf
+    for(i in 1:length(possibleEdges)) {
+        minVal <- min(minVal, possibleEdges[[i]]$soil)
+    }
+    
+    return (1)
+}
+
 existsInPath <- function(node, path)
 {
     for(i in 1:length(path)) {
@@ -169,7 +183,7 @@ for (i in 1:length(IWDs)) {
     possibleNodes <- list()
     cat(c(i, ": possibleEdges\n"))
     for(j in 1:length(edges)) {
-        #this edges starts from our last node
+        #this edges starts from our last node (remember edges are bidirectional)
         if(edges[[j]]$begin == lastNode) {
             #only requirement is not to have the same node
             #twice or more times in generated path for
@@ -190,7 +204,7 @@ for (i in 1:length(IWDs)) {
     }
     #print available edges
     for(k in 1:length(possibleEdges)) {
-        cat(c(lastNode, "->", possibleNodes[[k]], "\n"))
+        cat(c(lastNode, "->", possibleNodes[[k]], "f = ", f(possibleEdges[[k]], possibleEdges), "\n"))
         #print(j + ": " + possibleEdges[[j]]$begin + "->" + possibleEdges[[j]]$end)
     }
     
