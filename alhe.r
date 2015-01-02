@@ -100,12 +100,12 @@ last <- function(x) { return( x[length(x)] ) }
 
 nodes <- list('A', 'B', 'C', 'D');
 edges <- list( #access: edges[[i]]$field
-    list(begin = nodes[[1]], end = nodes[[2]], length = 100, soil = 0),
-    list(begin = nodes[[1]], end = nodes[[3]], length = 120, soil = 0),
-    list(begin = nodes[[1]], end = nodes[[4]], length = 90, soil = 0),
-    list(begin = nodes[[2]], end = nodes[[3]], length = 60, soil = 0),
-    list(begin = nodes[[2]], end = nodes[[4]], length = 130, soil = 0),
-    list(begin = nodes[[3]], end = nodes[[4]], length = 70, soil = 0)
+    list(begin = nodes[[1]], end = nodes[[2]], length = 100, soil = 0, auxSoil = 0),
+    list(begin = nodes[[1]], end = nodes[[3]], length = 120, soil = 0, auxSoil = 0),
+    list(begin = nodes[[1]], end = nodes[[4]], length = 90, soil = 0, auxSoil = 0),
+    list(begin = nodes[[2]], end = nodes[[3]], length = 60, soil = 0, auxSoil = 0),
+    list(begin = nodes[[2]], end = nodes[[4]], length = 130, soil = 0, auxSoil = 0),
+    list(begin = nodes[[3]], end = nodes[[4]], length = 70, soil = 0, auxSoil = 0)
     );
 
 IWDs <- list()
@@ -170,6 +170,7 @@ g <- function(edge, possibleEdges) {
 }
 
 time <- function(egde, velocity) {
+    #HUD(i, j) is defined as length of egde(i, j)
     return (edge$length/velocity)
 }
 
@@ -183,6 +184,7 @@ existsInPath <- function(node, path)
     
     return (FALSE)
 }
+
 
 for (i in 1:length(IWDs)) {
     #find nodes that were not visited by IWD yet
@@ -253,8 +255,23 @@ for (i in 1:length(IWDs)) {
     IWDs[[i]]$v = IWDs[[i]]$v + ((a_v)/(b_v + c_v * possibleEdges[[selIndex]]$soil^2))
     cat(c("Updated velocity: ", IWDs[[i]]$v, "\n"))
     
-    #calculate delta soil
+    #calculate delta soil for selected edge
     dSoil <- ((a_s)/(b_s + c_s*time(possibleEdges[[selIndex]], IWDs[[i]]$v)^2))
     cat(c("dSoil: ", dSoil, "\n"))
+    
+    #update soil for IWD and graph edge
+    IWDs[[i]]$soil <- IWDs[[i]]$soil + dSoil
+    edgeSoilChange <- (1 - p_n) * possibleEdges[[selIndex]]$soil - p_n * dSoil
+    possibleEdges[[selIndex]]$auxSoil <- possibleEdges[[selIndex]]$auxSoil + edgeSoilChange
+    
+    cat(c("IWD soil: ", IWDs[[i]]$soil , "\n"))
+    cat(c("edge soil change: ", possibleEdges[[selIndex]]$auxSoil , "\n"))
+    
+}
+
+#update soil on edges
+for (i in 1:length(edges)) {
+    edges[[i]]$soil <- edges[[i]]$soil + edges[[i]]$auxSoil
+    edges[[i]]$auxSoil <- 0
 }
 
