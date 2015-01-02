@@ -275,3 +275,12 @@ for (i in 1:length(edges)) {
     edges[[i]]$auxSoil <- 0
 }
 
+#sortowanie
+lengths <- sapply(edges,"[[","length")
+sorted <- edges[order(lengths)]
+#print(sorted[[1]]$end)
+for(i in 1:length(sorted)) {
+    cat(c(sorted[[i]]$begin, "->", sorted[[i]]$end, " length = ", sorted[[i]]$length, "\n"))
+}
+
+
