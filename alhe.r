@@ -162,7 +162,11 @@ g <- function(edge, possibleEdges) {
         minVal <- min(minVal, possibleEdges[[i]]$soil)
     }
     
-    return (1)
+    if(minVal >= 0) {
+        return (edge$soil) 
+    }
+    
+    return (edge$soil - min)
 }
 
 existsInPath <- function(node, path)
@@ -202,11 +206,44 @@ for (i in 1:length(IWDs)) {
             }
         }
     }
-    #print available edges
+    
+    #if possibleNodes is empty then this IWD has finished it's processing
+    #(found a solution or became unable to move)
+    #TODO this part!
+    
+    possibleEdgesFSum <- 0
+    probabilityList <- list()
     for(k in 1:length(possibleEdges)) {
-        cat(c(lastNode, "->", possibleNodes[[k]], "f = ", f(possibleEdges[[k]], possibleEdges), "\n"))
-        #print(j + ": " + possibleEdges[[j]]$begin + "->" + possibleEdges[[j]]$end)
+        possibleEdgesFSum <- possibleEdgesFSum + f(possibleEdges[[k]], possibleEdges)
     }
+    
+    for(k in 1:length(possibleEdges)) {
+        probabilityList[[length(probabilityList) + 1]] <- f(possibleEdges[[k]], possibleEdges)/possibleEdgesFSum
+    }
+    
+    #print available edges with their probability of selection (DEBUG)
+    for(k in 1:length(possibleEdges)) {
+        cat(c(lastNode, "->", possibleNodes[[k]], "| prob = ", probabilityList[[k]], "\n"))
+    }
+    
+    #select index of next node
+    selIndex <- sample(1:length(possibleEdges), 1, prob = probabilityList)
+    cat(c("Selected edge: ", possibleEdges[[selIndex]]$begin, "->", possibleEdges[[selIndex]]$end, "\n"))
+    
+    #add node to IWD visited node list (remember that edge from A to B or from B to A
+    #is represented once, so there are 2 cases here to consider depending where start is)
+    if(possibleEdges[[selIndex]]$begin == lastNode) {
+        IWDs[[i]]$nodes[[length(IWDs[[i]]$nodes) + 1]] <- possibleEdges[[selIndex]]$end
+    } else {
+        IWDs[[i]]$nodes[[length(IWDs[[i]]$nodes) + 1]] <- possibleEdges[[selIndex]]$begin
+    }
+    
+    #print visited node list after adding new one
+    cat("Visited nodes : [")
+    for(k in 1:length(IWDs[[i]]$nodes)) {
+        cat(IWDs[[i]]$nodes[[k]], ", ")
+    }
+    cat("\b\b\b]\n")
     
 }
 
