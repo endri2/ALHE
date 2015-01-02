@@ -169,6 +169,10 @@ g <- function(edge, possibleEdges) {
     return (edge$soil - min)
 }
 
+time <- function(egde, velocity) {
+    return (edge$length/velocity)
+}
+
 existsInPath <- function(node, path)
 {
     for(i in 1:length(path)) {
@@ -248,5 +252,9 @@ for (i in 1:length(IWDs)) {
     #update velocity
     IWDs[[i]]$v = IWDs[[i]]$v + ((a_v)/(b_v + c_v * possibleEdges[[selIndex]]$soil^2))
     cat(c("Updated velocity: ", IWDs[[i]]$v, "\n"))
+    
+    #calculate delta soil
+    dSoil <- ((a_s)/(b_s + c_s*time(possibleEdges[[selIndex]], IWDs[[i]]$v)^2))
+    cat(c("dSoil: ", dSoil, "\n"))
 }
 
