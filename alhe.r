@@ -282,6 +282,7 @@ for (i in 1:length(edges)) {
 }
 
 #solution quality calculation
+#TEMP: assumes that IWDs[[1]] is iteration-best solution
 isEdgeInList <- function(edge, edgeList) {
     cat(c("testing for edge: ", edge$begin, "->", edge$end, "\n"))
     for(i in 1:length(edgeList)) { 
@@ -330,5 +331,14 @@ for(i in 1:length(IWDs[[1]]$edges)) {
     quality <- quality + IWDs[[1]]$edges[[i]]$length
 }
 cat(c("solution quality: ", quality, "\n"))
+
+#update the soils on paths that form current iteration-best solution
+#TEMP: assumes that IWDs[[1]] is iteration-best solution
+for(i in 1:length(IWDs[[1]]$edges)) {
+    #number of edges + 1 is number of nodes
+    N_IB <- length(IWDs[[1]]$edges) + 1 
+    IWDs[[1]]$edges[[i]] <- (1 + p_IWD) * IWDs[[1]]$edges[[i]]$soil
+        - (p_IWD) * ((1)/(N_IB - 1)) * IWDs[[1]]$soil
+}
 
 
