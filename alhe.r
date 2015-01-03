@@ -8,8 +8,116 @@
 
 ############################################################
 
+#creates new set of IWDs spread out randomly over graph
+initializeIWD <- function(model) {
+    IWDs <- list()
+    #initialize IWDs
+    for (i in 1:length(model$nodes)) {
+        #set initVel, set soil to 0, set IWD's starting points ("spread out nodes")
+        IWDs[[length(IWDs) + 1]] <- list(
+            id = i, 
+            v = initVel, 
+            soil = 0, 
+            nodes = list(sample(nodes, 1)[[1]]),
+            edges = list())
+    }
+    
+    return (IWDs)
+}
 
+#prepare model for inner iteration
+initInnerLoopModel <- function(model, history) {
+    #set active IWDs running
+    model$activeIWDs <- length(history)
+    return (model)
+}
 
+solutionQuality <- function(solution) {
+    quality <- 0
+    for(j in 1:length(solution$edges)) {
+        quality <- quality + solution$edges[[i]]$length
+    }
+    return (quality)
+}
+
+#finds iteration-best solution in history
+#and returns it with it's quality
+getIterationBestSolution <- function(history, model) {
+    bestSolutionQuality <- Inf
+    bestSolution <- NULL
+    for(i in 1:length(history)) {
+        #do not take partial solutions
+        if(length(history[[i]]$edges) != length(model$nodes)) {
+            next;
+        }
+        
+        #calculate solution quality, which is sum of edge's length
+        #across solution path
+        quality <- solutionQuality(history[[i]])
+
+        if(quality < bestSolutionQuality) {
+            bestSolutionQuality <- quality
+            bestSolution <- history[[i]]
+        }
+    }
+    bestSolution$quality <- bestSolutionQuality
+    return (bestSolution)
+}
+
+#termination condition for inner loop
+#all IWDs must have completed their solution
+#and this is indicated by 0 activeIWDs
+innerTermination <- function(history, model) {
+    if(model$activeIWDs == 0) {
+        return (TRUE)
+    }
+    
+    return (FALSE)
+}
+
+updatePaths <- function(solution, model) {
+    for(i in 1:length(solution$edges)) {
+        #number of edges + 1 is number of nodes
+        N_IB <- length(solution$edges) + 1 
+        edgeIndex <- getEdgeIndex(solution$edges[[i]], model$edges)
+        
+        model$edges[[edgeIndex]] <- (1 + p_IWD) * model$edges[[edgeIndex]]$soil
+        - (p_IWD) * ((1)/(N_IB - 1)) * solution$soil
+        
+    }
+}
+
+#finds edge index in edgeList, returns 0 if not found
+getEdgeIndex <- function(edge, edgeList) {
+    for(i in 1:length(edgeList)) { 
+        listEdge <- edgeList[[i]]
+        if(listEdge$begin == edge$begin && listEdge$end == edge$end) {
+            return (i)
+        }
+    }
+    
+    return (0)
+}
+
+#creates IWDs and finds iteration-best solution
+#returns updated edges by IWDs and iteration-best solution
+#model contains nodes and edges of graph
+innerLoop <- function(model) {
+    history <- initializeIWD(model)
+    model <- initInnerLoopModel(model, history)
+    
+    while(!innerTermination(history, model)) {
+        aa<-aggregatedOperator(history, model)
+        history<-historyPush(history,aa$newPoints)
+        model<-aa$newModel
+    }
+    iterationBestSolution <- getIterationBestSolution(history, model)
+    #point 7 of algorithm: update paths on iteration best solution
+    model <- updatePaths(iterationBestSolution, model)
+    
+    #returns iteration-best solution
+    return(list(solution = iterationBestSolution, model = model))
+}
 
 #### TO BE DEFINED BY THE USER
 
@@ -17,15 +125,30 @@
 #to be defined
 selection<-function(history, model)
 {
-   #select a number of points from the history using the 
-   #method's parameters and the current state of the model
-   return(selectedPoints)
+    #select a number of points from the history using the 
+    #method's parameters and the current state of the model
+    selectedIWDs <- historyPop(history, model$activeIWDs)
+    
+    return(selectedIWDs)
 }
 
 #update of a model based on a LIST of points
 #to be defined
-modelUpdate<-function(selectedPoints, oldModel)
+modelUpdate<-function(selectedPoints, oldModel, updatedEdges)
 {
+    newModel <- oldModel
+    #update number of edges to take for next iteration
+    newModel$activeIWDs <- length(selectedPoints)
+    if(newModel$activeIWDs == 0) {
+        return (newModel)
+    }
+    #update soil on edges
+    for(i in 1:length(updatedEdges)) {
+        idx <- getEdgeIndex(updatedEdges[[i]], newModel$edges)
+        newModel$edges[[idx]]$soil <- newModel$edges[[idx]]$soil + updatedEdges[[i]]$auxSoil
+    }
+    
+    
    #take a look at the list of selectedPoints and 
    #on the current state of the model, update it 
    #and then return
@@ -37,7 +160,7 @@ modelUpdate<-function(selectedPoints, oldModel)
 variation<-function(selectedPoints, model)
 {
    #generate the list of newPoints and then  
-   return (newPoints)
+   return (expandIWDs(selectedPoints, model))
 }
 
 #####  THE METAHEURISTIC "ENGINE"
@@ -48,9 +171,13 @@ variation<-function(selectedPoints, model)
 aggregatedOperator<-function(history, oldModel)
 {
 
-   selectedPoints<-selection(history, oldModel)
-   newModel<-modelUpdate(selectedPoints, oldModel)
-   newPoints<-variation(selectedPoints, newModel)
+   selectedPoints <- selection(history, oldModel)
+   varResult <- variation(selectedPoints, oldModel)
+   updatedEdges <- varResult$edges
+   newPoints <- varResult$IWDs
+   
+   newModel <- modelUpdate(newPoints, oldModel, updatedEdges)
+   
    return (list(newPoints=newPoints,newModel=newModel))
 }
 
@@ -77,15 +204,15 @@ metaheuristicRun<-function(initialization, startPoints, termination, evaluation)
 #push a LIST of points into the history
 historyPush<-function(oldHistory, newPoints)
 {
-   newHistory<-c(oldHistory,newPoints)
-   return (newHistory)
+    newHistory<-c(oldHistory,newPoints)
+    return (newHistory)
 }
 #read a LIST of points pushed recently into the history
 historyPop<-function(history, number)
 {
-   stop=length(history)
-   start=max(stop-number+1,1)
-   return(history[start:stop])
+    stop=length(history)
+    start=max(stop-number+1,1)
+    return(history[start:stop])
 }
 
 #evaluate a LIST of points
@@ -108,11 +235,17 @@ edges <- list( #access: edges[[i]]$field
     list(begin = nodes[[3]], end = nodes[[4]], length = 70, soil = 0, auxSoil = 0)
     );
 
+model = list(nodes = nodes, edges = edges)
+#print(length(model$nodes))
+#innerLoop(model)
+
+
 IWDs <- list()
 bestSolution <- NULL
 iterMax = 10
 iterCount = 0
 
+#global algorithm constants
 a_v = 1
 b_v = 0.01
 c_v = 1
@@ -171,10 +304,10 @@ g <- function(edge, possibleEdges) {
         return (edge$soil) 
     }
     
-    return (edge$soil - min)
+    return (edge$soil - minVal)
 }
 
-time <- function(egde, velocity) {
+time <- function(edge, velocity) {
     #HUD(i, j) is defined as length of egde(i, j)
     return (edge$length/velocity)
 }
@@ -190,7 +323,105 @@ existsInPath <- function(node, path)
     return (FALSE)
 }
 
-
+expandIWDs <- function(IWDs, model) {
+    newIWDs <- list(IWDs = list(), edges = list())
+    for (i in 1:length(IWDs)) {
+        newIWD <- IWDs[[i]]
+        #find nodes that were not visited by IWD yet
+        lastNode <- newIWD$nodes[[length(newIWD$nodes)]]
+        possibleEdges <- list()
+        possibleNodes <- list()
+        
+        cat(c(i, ": possibleEdges\n"))
+        edges <- model$edges
+        for(j in 1:length(edges)) {
+            #this edges starts from our last node (remember edges are bidirectional)
+            if(edges[[j]]$begin == lastNode) {
+                #only requirement is not to have the same node
+                #twice or more times in generated path for
+                #travelling salesman problem, which is also 
+                #default requirement for the IWD
+                
+                if(existsInPath(edges[[j]]$end, newIWD$nodes) == FALSE) {
+                    possibleEdges[[length(possibleEdges) + 1]] <- edges[[j]]
+                    possibleNodes[[length(possibleNodes) + 1]] <- edges[[j]]$end
+                }
+                
+            }else if(edges[[j]]$end == lastNode) {
+                if(existsInPath(edges[[j]]$begin, newIWD$nodes) == FALSE) {
+                    possibleEdges[[length(possibleEdges) + 1]] <- edges[[j]]
+                    possibleNodes[[length(possibleNodes) + 1]] <- edges[[j]]$begin
+                }
+            }
+        }
+        
+        #if possibleNodes is empty then this IWD has finished it's processing
+        #(found a solution or became unable to move)
+        if(length(possibleNodes) == 0) {
+            next
+        }
+        
+        #calculate probability vector
+        possibleEdgesFSum <- 0
+        probabilityList <- list()
+        for(k in 1:length(possibleEdges)) {
+            possibleEdgesFSum <- possibleEdgesFSum + f(possibleEdges[[k]], possibleEdges)
+        }
+        
+        for(k in 1:length(possibleEdges)) {
+            probabilityList[[length(probabilityList) + 1]] <- f(possibleEdges[[k]], possibleEdges)/possibleEdgesFSum
+        }
+        
+        #print available edges with their probability of selection
+        for(k in 1:length(possibleEdges)) {
+            cat(c(lastNode, "->", possibleNodes[[k]], "| prob = ", probabilityList[[k]], "\n"))
+        }
+        
+        #select index of next node
+        selIndex <- sample(1:length(possibleEdges), 1, prob = probabilityList)
+        cat(c("Selected edge: ", possibleEdges[[selIndex]]$begin, "->", possibleEdges[[selIndex]]$end, "\n"))
+        
+        #add node to IWD visited node list (remember that edge from A to B or from B to A
+        #is represented once, so there are 2 cases here to consider depending where start is)
+        if(possibleEdges[[selIndex]]$begin == lastNode) {
+            newIWD$nodes[[length(newIWD$nodes) + 1]] <- possibleEdges[[selIndex]]$end
+        } else {
+            newIWD$nodes[[length(newIWD$nodes) + 1]] <- possibleEdges[[selIndex]]$begin
+        }
+        newIWD$edges[[length(newIWD$edges) + 1]] <- possibleEdges[[selIndex]]
+        
+        #print visited node list after adding new one
+        cat("Visited nodes: [")
+        for(k in 1:length(newIWD$nodes)) {
+            cat(newIWD$nodes[[k]], ", ")
+        }
+        cat("\b\b\b]\n")
+        
+        #update velocity
+        newIWD$v = newIWD$v + ((a_v)/(b_v + c_v * possibleEdges[[selIndex]]$soil^2))
+        cat(c("Updated velocity: ", newIWD$v, "\n"))
+        
+        #calculate delta soil for selected edge
+        dSoil <- ((a_s)/(b_s + c_s*time(possibleEdges[[selIndex]], newIWD$v)^2))
+        cat(c("dSoil: ", dSoil, "\n"))
+        
+        #update soil for IWD and graph edge
+        newIWD$soil <- newIWD$soil + dSoil
+        edgeSoilChange <- (1 - p_n) * possibleEdges[[selIndex]]$soil - p_n * dSoil
+        possibleEdges[[selIndex]]$auxSoil <- possibleEdges[[selIndex]]$auxSoil + edgeSoilChange
+        
+        newIWDs$IWDs[[length(newIWDs$IWDs) + 1]] <- newIWD
+        newIWDs$edges[[length(newIWDs$edges) + 1]] <- possibleEdges[[selIndex]]
+        
+        cat(c("IWD soil: ", newIWD$soil , "\n"))
+        cat(c("edge soil change: ", possibleEdges[[selIndex]]$auxSoil , "\n"))
+        
+    }
+    
+    return (newIWDs)
+}
+innerLoop(model)
+stop("tak")
 for (i in 1:length(IWDs)) {
     #find nodes that were not visited by IWD yet
     lastNode <- IWDs[[i]]$nodes[[length(IWDs[[i]]$nodes)]]
