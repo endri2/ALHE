@@ -99,15 +99,23 @@ innerTermination <- function(history, model) {
 }
 
 updatePaths <- function(solution, model) {
-    for(i in 1:length(solution$edges)) {
-        #number of edges + 1 is number of nodes
-        N_IB <- length(solution$edges) + 1 
-        edgeIndex <- getEdgeIndex(solution$edges[[i]], model$edges)
+    nodeNum <- length(solution$nodes)
+    
+    for(i in 1:nodeNum) {
+        N_IB <- nodeNum 
+        nextNode <- i + 1
+        if(nextNode > nodeNum) {
+            nextNode <- 1
+        }
         
-        model$edges[[edgeIndex]] <- (1 + p_IWD) * model$edges[[edgeIndex]]$soil
+        edgeIndex <- getEdgeIndexFromNodes(solution$nodes[[i]], solution$nodes[[nextNode]], model$edges)
+        
+        model$edges[[edgeIndex]]$soil <- (1 + p_IWD) * model$edges[[edgeIndex]]$soil
         - (p_IWD) * ((1)/(N_IB - 1)) * solution$soil
         
     }
+    
+    return (model)
 }
 
 #finds edge index in edgeList, returns 0 if not found
@@ -299,8 +307,8 @@ initVel = 200
 ############################
 
 #initialize soils
-for (i in 1:length(edges)) {
-    edges[[i]]$soil <- initSoil
+for (i in 1:length(model$edges)) {
+    model$edges[[i]]$soil <- initSoil
 }
 
 #initialize IWDs
