@@ -32,10 +32,17 @@ initInnerLoopModel <- function(model, history) {
     return (model)
 }
 
-solutionQuality <- function(solution) {
+solutionQuality <- function(solution, model) {
     quality <- 0
-    for(j in 1:length(solution$edges)) {
-        quality <- quality + solution$edges[[i]]$length
+    nodeNum <- length(solution$nodes)
+    for(j in 1:nodeNum) {
+        #calculate next index in node list
+        #remember that we need to add edge which goes
+        #from last to first node!
+        nextNodeIdx <- ((j + 1) %% nodeNum) + 1
+        
+        edgeIndex <- getEdgeIndexFromNodes(solution$nodes[[j]], solution$nodes[[nextNodeIdx]] , model$edges)
+        quality <- quality + model$edges[[edgeIndex]]$length
     }
     return (quality)
 }
@@ -47,13 +54,15 @@ getIterationBestSolution <- function(history, model) {
     bestSolution <- NULL
     for(i in 1:length(history)) {
         #do not take partial solutions
-        if(length(history[[i]]$edges) != length(model$nodes)) {
+        #(number of visited nodes is not equal
+        #to number of nodes in graph)
+        if(length(history[[i]]$nodes) != length(model$nodes)) {
             next;
         }
         
         #calculate solution quality, which is sum of edge's length
         #across solution path
-        quality <- solutionQuality(history[[i]])
+        quality <- solutionQuality(history[[i]], model)
 
         if(quality < bestSolutionQuality) {
             bestSolutionQuality <- quality
@@ -99,6 +108,17 @@ getEdgeIndex <- function(edge, edgeList) {
     return (0)
 }
 
+getEdgeIndexFromNodes <- function(nodeBegin, nodeEnd, edgeList) {
+    for(i in 1:length(edgeList)) { 
+        listEdge <- edgeList[[i]]
+        if(listEdge$begin == nodeBegin && listEdge$end == nodeEnd) {
+            return (i)
+        } else if(listEdge$begin == nodeEnd && listEdge$end == nodeBegin) {
+            return (i)
+        }
+    }
+}
+
 #creates IWDs and finds iteration-best solution
 #returns updated edges by IWDs and iteration-best solution
 #model contains nodes and edges of graph
@@ -110,6 +130,14 @@ innerLoop <- function(model) {
         aa<-aggregatedOperator(history, model)
         history<-historyPush(history,aa$newPoints)
         model<-aa$newModel
+    }
+    for(i in 1:length(history)) {
+        #cat("Visited nodes: [")
+        #for(k in 1:length(history[[i]]$nodes)) {
+        #    cat(c(history[[i]]$nodes[[k]], ", "))
+        #}
+        #cat("\b\b\b]\n")
+        print(length(history[[i]]$edges))
     }
     iterationBestSolution <- getIterationBestSolution(history, model)
     #point 7 of algorithm: update paths on iteration best solution
