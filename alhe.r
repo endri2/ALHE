@@ -139,6 +139,8 @@ getEdgeIndexFromNodes <- function(nodeBegin, nodeEnd, edgeList) {
             return (i)
         }
     }
+    
+    return (0)
 }
 
 #creates IWDs and finds iteration-best solution
@@ -190,10 +192,10 @@ modelUpdate<-function(selectedPoints, oldModel, updatedEdges)
         return (newModel)
     }
     #update soil on edges
-    for(i in 1:length(updatedEdges)) {
-        idx <- getEdgeIndex(updatedEdges[[i]], newModel$edges)
-        newModel$edges[[idx]]$soil <- newModel$edges[[idx]]$soil + updatedEdges[[i]]$auxSoil
-    }
+    #for(i in 1:length(updatedEdges)) {
+    #    idx <- getEdgeIndex(updatedEdges[[i]], newModel$edges)
+    #    newModel$edges[[idx]]$soil <- newModel$edges[[idx]]$soil + updatedEdges[[i]]$auxSoil
+    #}
     
     
    #take a look at the list of selectedPoints and 
@@ -223,7 +225,7 @@ aggregatedOperator<-function(history, oldModel)
    updatedEdges <- varResult$edges
    newPoints <- varResult$IWDs
    
-   newModel <- modelUpdate(newPoints, oldModel, updatedEdges)
+   newModel <- modelUpdate(newPoints, varResult$model, updatedEdges)
    
    return (list(newPoints=newPoints,newModel=newModel))
 }
@@ -456,7 +458,9 @@ expandIWDs <- function(IWDs, model) {
         #update soil for IWD and graph edge
         newIWD$soil <- newIWD$soil + dSoil
         edgeSoilChange <- (1 - p_n) * possibleEdges[[selIndex]]$soil - p_n * dSoil
-        possibleEdges[[selIndex]]$auxSoil <- possibleEdges[[selIndex]]$auxSoil + edgeSoilChange
+        #possibleEdges[[selIndex]]$auxSoil <- possibleEdges[[selIndex]]$auxSoil + edgeSoilChange
+        modelEdgeIndex <- getEdgeIndex(possibleEdges[[selIndex]], model$edges)
+        model$edges[[modelEdgeIndex]]$soil <- edgeSoilChange
         
         newIWDs$IWDs[[length(newIWDs$IWDs) + 1]] <- newIWD
         newIWDs$edges[[length(newIWDs$edges) + 1]] <- possibleEdges[[selIndex]]
@@ -466,6 +470,7 @@ expandIWDs <- function(IWDs, model) {
         
     }
     
+    newIWDs$model <- model
     return (newIWDs)
 }
 innerLoop(model)
