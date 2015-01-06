@@ -39,9 +39,17 @@ solutionQuality <- function(solution, model) {
         #calculate next index in node list
         #remember that we need to add edge which goes
         #from last to first node!
-        nextNodeIdx <- ((j + 1) %% nodeNum) + 1
+        nextNodeIdx <- j + 1 #((j + 1) %% nodeNum)
+        if(nextNodeIdx > nodeNum) {
+            nextNodeIdx <- 1
+        }
+        
+        cat(c(solution$nodes[[j]], ",", solution$nodes[[nextNodeIdx]], " | "))
         
         edgeIndex <- getEdgeIndexFromNodes(solution$nodes[[j]], solution$nodes[[nextNodeIdx]] , model$edges)
+        
+        cat(c(model$edges[[edgeIndex]]$begin, " -> ", model$edges[[edgeIndex]]$end,
+              " len = ", model$edges[[edgeIndex]]$length, "\n"))
         quality <- quality + model$edges[[edgeIndex]]$length
     }
     return (quality)
@@ -63,6 +71,12 @@ getIterationBestSolution <- function(history, model) {
         #calculate solution quality, which is sum of edge's length
         #across solution path
         quality <- solutionQuality(history[[i]], model)
+        
+        cat("Solution: [")
+        for(k in 1:length(history[[i]]$nodes)) {
+            cat(c(history[[i]]$nodes[[k]], ", "))
+        }
+        cat(c("\b\b\b], quality = ", quality,"\n"))
 
         if(quality < bestSolutionQuality) {
             bestSolutionQuality <- quality
@@ -131,14 +145,7 @@ innerLoop <- function(model) {
         history<-historyPush(history,aa$newPoints)
         model<-aa$newModel
     }
-    for(i in 1:length(history)) {
-        #cat("Visited nodes: [")
-        #for(k in 1:length(history[[i]]$nodes)) {
-        #    cat(c(history[[i]]$nodes[[k]], ", "))
-        #}
-        #cat("\b\b\b]\n")
-        print(length(history[[i]]$edges))
-    }
+
     iterationBestSolution <- getIterationBestSolution(history, model)
     #point 7 of algorithm: update paths on iteration best solution
     model <- updatePaths(iterationBestSolution, model)
