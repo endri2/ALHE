@@ -152,6 +152,10 @@ innerLoop <- function(model) {
         aa<-aggregatedOperator(history, model)
         history<-historyPush(history,aa$newPoints)
         model<-aa$newModel
+        
+        for(k in 1:length(model$edges)) {
+            cat(c("@ ", model$edges[[k]]$begin, "->", model$edges[[k]]$end, "| soil = ", model$edges[[k]]$soil, "\n"))
+        }
     }
 
     iterationBestSolution <- getIterationBestSolution(history, model)
@@ -240,6 +244,7 @@ metaheuristicRun<-function(initialization, startPoints, termination, evaluation)
       aa$newPoints<-evaluateList(aa$newPoints, evaluation)
       history<-historyPush(history,aa$newPoints)
       model<-aa$newModel
+      
    }
    return(history)
 }
